@@ -2,10 +2,9 @@ pipeline {
     agent any
 
     environment {
-        // IDs das credenciais
         DOCKER_HUB_CREDENTIALS = '4fe6e8f4-f537-44ca-b68e-d659d93610db'
         GITHUB_CREDENTIALS = 'github_ssh_key'
-        AWS_CREDENTIALS = 'AWS' // Substitua pelo ID correto das suas credenciais AWSWSAWiAWSWSAWS
+        AWS_CREDENTIALS = 'AWS' // Substitua pelo ID correto das suas credenciais AWS
     }
 
     stages {
@@ -14,7 +13,7 @@ pipeline {
                 script {
                     checkout([
                         $class: 'GitSCM',
-                        branches: [[name: '*/main']], // Certifique-se que esta é a branch correta
+                        branches: [[name: '*/main']], // Certifique-se de que esta é a branch correta
                         doGenerateSubmoduleConfigurations: false,
                         extensions: [],
                         userRemoteConfigs: [[
@@ -27,12 +26,6 @@ pipeline {
         }
 
         stage('Build') {
-            agent {
-                docker {
-                    image 'docker:19.03.12'
-                    args '-v /var/run/docker.sock:/var/run/docker.sock'
-                }
-            }
             steps {
                 script {
                     echo 'Building the project...'
@@ -51,12 +44,6 @@ pipeline {
         }
 
         stage('Push Image') {
-            agent {
-                docker {
-                    image 'docker:19.03.12'
-                    args '-v /var/run/docker.sock:/var/run/docker.sock'
-                }
-            }
             steps {
                 script {
                     withCredentials([usernamePassword(credentialsId: "${DOCKER_HUB_CREDENTIALS}", usernameVariable: 'DOCKERHUB_USERNAME', passwordVariable: 'DOCKERHUB_PASSWORD')]) {
