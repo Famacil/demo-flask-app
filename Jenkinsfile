@@ -19,7 +19,7 @@ pipeline {
                         doGenerateSubmoduleConfigurations: false,
                         extensions: [],
                         userRemoteConfigs: [[
-                            url: 'git@github.com:Famacil/demo-flask-app.git',
+                            url: 'https://github.com/Famacil/demo-flask-app.git', // Usando HTTPS para evitar problemas de SSH
                             credentialsId: "${GITHUB_CREDENTIALS}"
                         ]]
                     ])
