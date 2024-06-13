@@ -1,7 +1,7 @@
 pipeline {
     agent {
         docker {
-            image 'docker:19.03.12' // Imagem Docker com Docker CLI instalado
+            image 'docker:19.03.12' // Usar imagem Docker com Docker CLI instalado
             args '-v /var/run/docker.sock:/var/run/docker.sock' // Montar o socket do Docker
         }
     }
@@ -17,10 +17,9 @@ pipeline {
         stage('Checkout') {
             steps {
                 script {
-                    // Usando uma sintaxe correta para o git checkout
                     checkout([
                         $class: 'GitSCM',
-                        branches: [[name: 'main']], // Certifique-se que esta é a branch correta
+                        branches: [[name: '*/main']], // Certifique-se que esta é a branch correta
                         doGenerateSubmoduleConfigurations: false,
                         extensions: [],
                         userRemoteConfigs: [[
@@ -35,7 +34,6 @@ pipeline {
         stage('Build') {
             steps {
                 script {
-                    // Comandos para construir o seu projeto
                     echo 'Building the project...'
                     sh 'docker build -t demo-flask-app .'
                 }
@@ -45,7 +43,6 @@ pipeline {
         stage('Test') {
             steps {
                 script {
-                    // Comandos para testar o seu projeto
                     echo 'Running tests...'
                     // Adicione os comandos de teste aqui
                 }
@@ -56,7 +53,6 @@ pipeline {
             steps {
                 script {
                     withCredentials([usernamePassword(credentialsId: "${DOCKER_HUB_CREDENTIALS}", usernameVariable: 'DOCKERHUB_USERNAME', passwordVariable: 'DOCKERHUB_PASSWORD')]) {
-                        // Comandos para empurrar a imagem Docker para um registro
                         echo 'Pushing Docker image...'
                         sh 'docker login -u $DOCKERHUB_USERNAME -p $DOCKERHUB_PASSWORD'
                         sh 'docker tag demo-flask-app $DOCKERHUB_USERNAME/demo-flask-app:latest'
@@ -70,7 +66,6 @@ pipeline {
             steps {
                 script {
                     withCredentials([aws(credentialsId: "${AWS_CREDENTIALS}")]) {
-                        // Comandos para criar um cluster ECS
                         echo 'Creating ECS cluster...'
                         sh '''
                         aws ecs create-cluster --cluster-name demo-flask-cluster
@@ -84,7 +79,6 @@ pipeline {
             steps {
                 script {
                     withCredentials([aws(credentialsId: "${AWS_CREDENTIALS}")]) {
-                        // Comandos para registrar a definição da tarefa no ECS
                         echo 'Registering task definition...'
                         sh '''
                         aws ecs register-task-definition --family demo-flask-task \
@@ -100,7 +94,6 @@ pipeline {
             steps {
                 script {
                     withCredentials([aws(credentialsId: "${AWS_CREDENTIALS}")]) {
-                        // Comandos para criar um serviço ECS
                         echo 'Creating ECS service...'
                         sh '''
                         aws ecs create-service --cluster demo-flask-cluster --service-name demo-flask-service \
@@ -115,7 +108,6 @@ pipeline {
     post {
         always {
             script {
-                // Passos que devem ser executados sempre, como limpar recursos
                 echo 'Cleaning up...'
                 // Adicione os comandos de limpeza aqui
             }
