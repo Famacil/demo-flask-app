@@ -15,7 +15,7 @@ pipeline {
                     // Usando uma sintaxe correta para o git checkout
                     checkout([
                         $class: 'GitSCM',
-                        branches: [[name: '*/main']],
+                        branches: [[name: 'main']], // Certifique-se que esta é a branch correta
                         doGenerateSubmoduleConfigurations: false,
                         extensions: [],
                         userRemoteConfigs: [[
