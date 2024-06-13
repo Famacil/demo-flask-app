@@ -1,5 +1,10 @@
 pipeline {
-    agent any
+    agent {
+        docker {
+            image 'docker:19.03.12' // Imagem Docker com Docker CLI instalado
+            args '-v /var/run/docker.sock:/var/run/docker.sock' // Montar o socket do Docker
+        }
+    }
 
     environment {
         // IDs das credenciais
