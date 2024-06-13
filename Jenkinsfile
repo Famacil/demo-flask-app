@@ -1,16 +1,11 @@
 pipeline {
-    agent {
-        docker {
-            image 'docker:19.03.12' // Usar imagem Docker com Docker CLI instalado
-            args '-v /var/run/docker.sock:/var/run/docker.sock' // Montar o socket do Docker
-        }
-    }
+    agent any
 
     environment {
         // IDs das credenciais
         DOCKER_HUB_CREDENTIALS = '4fe6e8f4-f537-44ca-b68e-d659d93610db'
         GITHUB_CREDENTIALS = 'github_ssh_key'
-        AWS_CREDENTIALS = 'aws_credentials_id' // Substitua pelo ID correto das suas credenciais AWS
+        AWS_CREDENTIALS = 'AWS' // Substitua pelo ID correto das suas credenciais AWSWSAWiAWSWSAWS
     }
 
     stages {
@@ -32,6 +27,12 @@ pipeline {
         }
 
         stage('Build') {
+            agent {
+                docker {
+                    image 'docker:19.03.12'
+                    args '-v /var/run/docker.sock:/var/run/docker.sock'
+                }
+            }
             steps {
                 script {
                     echo 'Building the project...'
@@ -50,6 +51,12 @@ pipeline {
         }
 
         stage('Push Image') {
+            agent {
+                docker {
+                    image 'docker:19.03.12'
+                    args '-v /var/run/docker.sock:/var/run/docker.sock'
+                }
+            }
             steps {
                 script {
                     withCredentials([usernamePassword(credentialsId: "${DOCKER_HUB_CREDENTIALS}", usernameVariable: 'DOCKERHUB_USERNAME', passwordVariable: 'DOCKERHUB_PASSWORD')]) {
@@ -65,7 +72,7 @@ pipeline {
         stage('Create ECS Cluster') {
             steps {
                 script {
-                    withCredentials([aws(credentialsId: "${AWS_CREDENTIALS}")]) {
+                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "${AWS_CREDENTIALS}"]]) {
                         echo 'Creating ECS cluster...'
                         sh '''
                         aws ecs create-cluster --cluster-name demo-flask-cluster
@@ -78,7 +85,7 @@ pipeline {
         stage('Register Task Definition') {
             steps {
                 script {
-                    withCredentials([aws(credentialsId: "${AWS_CREDENTIALS}")]) {
+                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "${AWS_CREDENTIALS}"]]) {
                         echo 'Registering task definition...'
                         sh '''
                         aws ecs register-task-definition --family demo-flask-task \
@@ -93,7 +100,7 @@ pipeline {
         stage('Create Service') {
             steps {
                 script {
-                    withCredentials([aws(credentialsId: "${AWS_CREDENTIALS}")]) {
+                    withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "${AWS_CREDENTIALS}"]]) {
                         echo 'Creating ECS service...'
                         sh '''
                         aws ecs create-service --cluster demo-flask-cluster --service-name demo-flask-service \
