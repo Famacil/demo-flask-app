@@ -6,7 +6,7 @@ pipeline {
         AWS_REGION = 'us-east-1' // Defina sua região aqui
         ECR_REPOSITORY = 'demo-flask-app'
         ECR_REGISTRY = '200568115249.dkr.ecr.${AWS_REGION}.amazonaws.com'
-        AWS_CREDENTIALS = 'AWS' // Substitua pelo ID correto das suas credenciais AWS
+        AWS_CREDENTIALS = 'aws_credentials_id' // Substitua pelo ID correto das suas credenciais AWS
         GITHUB_CREDENTIALS = 'github_ssh_key'
     }
 
@@ -169,36 +169,4 @@ pipeline {
                             aws ec2 delete-route-table --route-table-id $RTB_ID --region ${AWS_REGION}
                             
                             # Destroy VPC
-                            VPC_ID=$(aws ec2 describe-vpcs --filters Name=tag:Name,Values=DemoVPC --region ${AWS_REGION} --query 'Vpcs[0].VpcId' --output text)
-                            aws ec2 delete-vpc --vpc-id $VPC_ID --region ${AWS_REGION}
-                            '''
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    parameters {
-        booleanParam(
-            name: 'DESTROY_INFRA',
-            defaultValue: false,
-            description: 'Marque esta opção para destruir a infraestrutura após a execução do pipeline'
-        )
-    }
-
-    post {
-        always {
-            script {
-                echo 'Cleaning up...'
-                // Adicione os comandos de limpeza aqui
-            }
-        }
-        success {
-            echo 'Pipeline completed successfully!'
-        }
-        failure {
-            echo 'Pipeline failed.'
-        }
-    }
-}
+                            VPC_ID=$(aws ec2 describe-vpcs --filters Name=tag:Name,Values=DemoVPC --region ${AWS_REGION} --query 'V
