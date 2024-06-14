@@ -81,6 +81,10 @@ pipeline {
                         SG_ID=$(aws ec2 create-security-group --group-name DemoSG --description "Demo security group" --vpc-id $VPC_ID --region ${AWS_REGION} --query 'GroupId' --output text)
                         aws ec2 authorize-security-group-ingress --group-id $SG_ID --protocol tcp --port 80 --cidr 0.0.0.0/0 --region ${AWS_REGION}
                         
+                        # Create ECS Cluster
+                        CLUSTER_NAME="demo-flask-cluster"
+                        aws ecs create-cluster --cluster-name $CLUSTER_NAME --region ${AWS_REGION}
+                        
                         # Check if ECS Task Execution Role already exists
                         ROLE_NAME="ecsTaskExecutionRole"
                         if ! aws iam get-role --role-name $ROLE_NAME --region ${AWS_REGION} &> /dev/null; then
@@ -186,4 +190,14 @@ pipeline {
                         
                         # Destroy Route Table
                         RTB_ID=$(aws ec2 describe-route-tables --filters Name=vpc-id,Values=$VPC_ID --region ${AWS_REGION} --query 'RouteTables[0].RouteTableId' --output text)
-                        aws ec2
+                        aws ec2 delete-route-table --route-table-id $RTB_ID --region ${AWS_REGION}
+                        
+                        # Destroy VPC
+                        aws ec2 delete-vpc --vpc-id $VPC_ID --region ${AWS_REGION}
+                        '''
+                    }
+                }
+            }
+        }
+    }
+}
