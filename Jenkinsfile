@@ -114,7 +114,7 @@ pipeline {
                               "cpu": "256",
                               "memory": "512"
                             }
-                            EOF
+EOF
                             )
                             echo "$TASK_DEFINITION" > taskdef.json
                             TASK_DEF_ARN=$(aws ecs register-task-definition --cli-input-json file://taskdef.json --query 'taskDefinition.taskDefinitionArn' --output text --region ${AWS_REGION})
