@@ -6,7 +6,7 @@ pipeline {
         AWS_REGION = 'us-east-1' // Defina sua região aqui
         ECR_REPOSITORY = 'demo-flask-app'
         ECR_REGISTRY = '200568115249.dkr.ecr.${AWS_REGION}.amazonaws.com'
-        AWS_CREDENTIALS = 'aws_credentials_id' // Substitua pelo ID correto das suas credenciais AWS
+        AWS_CREDENTIALS = 'AWS' // Substitua pelo ID correto das suas credenciais AWS
         GITHUB_CREDENTIALS = 'github_ssh_key'
     }
 
