@@ -5,8 +5,8 @@ pipeline {
         DOCKER_IMAGE = 'demo-flask-app'
         AWS_REGION = 'us-east-1'
         ECR_REPOSITORY = 'demo-flask-app'
-        ECR_REGISTRY = '200568115249.dkr.ecr.us-east-1.amazonaws.com'
-        AWS_CREDENTIALS = 'AWS' // Substitua pelo ID correto das suas credenciais AWS
+        ECR_REGISTRY = "200568115249.dkr.ecr.${AWS_REGION}.amazonaws.com"
+        AWS_CREDENTIALS = 'AWS' // Substitua pelo ID correto das suas credenciais 
         GITHUB_CREDENTIALS = 'github_ssh_key'
     }
 
@@ -81,36 +81,35 @@ pipeline {
                         SG_ID=$(aws ec2 create-security-group --group-name DemoSG --description "Demo security group" --vpc-id $VPC_ID --region ${AWS_REGION} --query 'GroupId' --output text)
                         aws ec2 authorize-security-group-ingress --group-id $SG_ID --protocol tcp --port 80 --cidr 0.0.0.0/0 --region ${AWS_REGION}
                         
-                        # Create ECS Cluster
-                        CLUSTER_NAME="demo-flask-cluster"
-                        aws ecs create-cluster --cluster-name $CLUSTER_NAME --region ${AWS_REGION}
-
-                        # Create IAM Role for ECS Task Execution
+                        # Check if ECS Task Execution Role already exists
                         ROLE_NAME="ecsTaskExecutionRole"
-                        cat <<EOF > trust-policy.json
-                        {
-                            "Version": "2012-10-17",
-                            "Statement": [
-                                {
-                                    "Effect": "Allow",
-                                    "Principal": {
-                                        "Service": "ecs-tasks.amazonaws.com"
-                                    },
-                                    "Action": "sts:AssumeRole"
-                                }
-                            ]
-                        }
-EOF
-                        aws iam create-role --role-name $ROLE_NAME --assume-role-policy-document file://trust-policy.json --region ${AWS_REGION}
+                        if ! aws iam get-role --role-name $ROLE_NAME --region ${AWS_REGION} &> /dev/null; then
+                            # Create IAM Role for ECS Task Execution
+                            cat <<EOF > trust-policy.json
+                            {
+                                "Version": "2012-10-17",
+                                "Statement": [
+                                    {
+                                        "Effect": "Allow",
+                                        "Principal": {
+                                            "Service": "ecs-tasks.amazonaws.com"
+                                        },
+                                        "Action": "sts:AssumeRole"
+                                    }
+                                ]
+                            }
+                            EOF
+                            aws iam create-role --role-name $ROLE_NAME --assume-role-policy-document file://trust-policy.json --region ${AWS_REGION}
+                        fi
+                        # Attach policy to ECS Task Execution Role
                         aws iam attach-role-policy --role-name $ROLE_NAME --policy-arn arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy --region ${AWS_REGION}
-                        EXECUTION_ROLE_ARN=$(aws iam get-role --role-name $ROLE_NAME --query 'Role.Arn' --output text --region ${AWS_REGION})
                         
                         # Register Task Definition
                         TASK_DEFINITION=$(cat <<EOF
                         {
                           "family": "demo-flask-task",
                           "networkMode": "awsvpc",
-                          "executionRoleArn": "$EXECUTION_ROLE_ARN",
+                          "executionRoleArn": "$(aws iam get-role --role-name $ROLE_NAME --query 'Role.Arn' --output text --region ${AWS_REGION})",
                           "containerDefinitions": [
                             {
                               "name": "demo-flask-container",
@@ -132,7 +131,7 @@ EOF
                           "cpu": "256",
                           "memory": "512"
                         }
-EOF
+                        EOF
                         )
                         echo "$TASK_DEFINITION" > taskdef.json
                         TASK_DEF_ARN=$(aws ecs register-task-definition --cli-input-json file://taskdef.json --query 'taskDefinition.taskDefinitionArn' --output text --region ${AWS_REGION})
@@ -187,15 +186,4 @@ EOF
                         
                         # Destroy Route Table
                         RTB_ID=$(aws ec2 describe-route-tables --filters Name=vpc-id,Values=$VPC_ID --region ${AWS_REGION} --query 'RouteTables[0].RouteTableId' --output text)
-                        aws ec2 delete-route-table --route-table-id $RTB_ID --region ${AWS_REGION}
-                        
-                        # Destroy VPC
-                        VPC_ID=$(aws ec2 describe-vpcs --filters Name=tag:Name,Values=DemoVPC --region ${AWS_REGION} --query 'Vpcs[0].VpcId' --output text)
-                        aws ec2 delete-vpc --vpc-id $VPC_ID --region ${AWS_REGION}
-                        '''
-                    }
-                }
-            }
-        }
-    }
-}
+                        aws ec2
