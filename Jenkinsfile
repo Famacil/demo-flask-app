@@ -3,11 +3,15 @@ pipeline {
 
     environment {
         DOCKER_IMAGE = 'demo-flask-app'
-        AWS_REGION = 'us-east-1' // Defina sua região aqui
+        AWS_REGION = 'us-east-1'
         ECR_REPOSITORY = 'demo-flask-app'
-        ECR_REGISTRY = '200568115249.dkr.ecr.${AWS_REGION}.amazonaws.com'
+        ECR_REGISTRY = '200568115249.dkr.ecr.us-east-1.amazonaws.com'
         AWS_CREDENTIALS = 'AWS' // Substitua pelo ID correto das suas credenciais AWS
         GITHUB_CREDENTIALS = 'github_ssh_key'
+    }
+
+    parameters {
+        booleanParam(name: 'DESTROY_INFRA', defaultValue: false, description: 'Destroy infrastructure after deployment')
     }
 
     stages {
@@ -112,7 +116,8 @@ pipeline {
                             }
                             EOF
                             )
-                            TASK_DEF_ARN=$(echo $TASK_DEFINITION | aws ecs register-task-definition --cli-input-json file://- --query 'taskDefinition.taskDefinitionArn' --output text --region ${AWS_REGION})
+                            echo "$TASK_DEFINITION" > taskdef.json
+                            TASK_DEF_ARN=$(aws ecs register-task-definition --cli-input-json file://taskdef.json --query 'taskDefinition.taskDefinitionArn' --output text --region ${AWS_REGION})
                             
                             # Create Service
                             SERVICE_NAME="demo-flask-service"
@@ -169,4 +174,13 @@ pipeline {
                             aws ec2 delete-route-table --route-table-id $RTB_ID --region ${AWS_REGION}
                             
                             # Destroy VPC
-                            VPC_ID=$(aws ec2 describe-vpcs --filters Name=tag:Name,Values=DemoVPC --region ${AWS_REGION} --query 'V
+                            VPC_ID=$(aws ec2 describe-vpcs --filters Name=tag:Name,Values=DemoVPC --region ${AWS_REGION} --query 'Vpcs[0].VpcId' --output text)
+                            aws ec2 delete-vpc --vpc-id $VPC_ID --region ${AWS_REGION}
+                            '''
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
