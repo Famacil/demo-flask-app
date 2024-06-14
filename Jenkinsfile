@@ -5,7 +5,7 @@ pipeline {
         DOCKER_IMAGE = 'demo-flask-app'
         AWS_REGION = 'us-east-1'
         ECR_REPOSITORY = 'demo-flask-app'
-        ECR_REGISTRY = '200568115249.dkr.ecr.us-east-1.amazonaws.com'
+        ECR_REGISTRY = '200568115249.dkr.ecr.${AWS_REGION}.amazonaws.com'
         AWS_CREDENTIALS = 'AWS' // Substitua pelo ID correto das suas credenciais AWS
         GITHUB_CREDENTIALS = 'github_ssh_key'
     }
@@ -87,12 +87,19 @@ pipeline {
                             # Create ECS Cluster
                             CLUSTER_NAME="demo-flask-cluster"
                             aws ecs create-cluster --cluster-name $CLUSTER_NAME --region ${AWS_REGION}
+
+                            # Create IAM Role for ECS Task Execution
+                            ROLE_NAME="ecsTaskExecutionRole"
+                            aws iam create-role --role-name $ROLE_NAME --assume-role-policy-document file://<(echo '{"Version": "2012-10-17","Statement": [{"Effect": "Allow","Principal": {"Service": "ecs-tasks.amazonaws.com"},"Action": "sts:AssumeRole"}]}') --region ${AWS_REGION}
+                            aws iam attach-role-policy --role-name $ROLE_NAME --policy-arn arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy --region ${AWS_REGION}
+                            EXECUTION_ROLE_ARN=$(aws iam get-role --role-name $ROLE_NAME --query 'Role.Arn' --output text --region ${AWS_REGION})
                             
                             # Register Task Definition
                             TASK_DEFINITION=$(cat <<EOF
                             {
                               "family": "demo-flask-task",
                               "networkMode": "awsvpc",
+                              "executionRoleArn": "$EXECUTION_ROLE_ARN",
                               "containerDefinitions": [
                                 {
                                   "name": "demo-flask-container",
