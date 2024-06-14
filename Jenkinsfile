@@ -5,6 +5,7 @@ pipeline {
         DOCKER_HUB_CREDENTIALS = '4fe6e8f4-f537-44ca-b68e-d659d93610db'
         GITHUB_CREDENTIALS = 'github_ssh_key'
         AWS_CREDENTIALS = 'AWS' // Substitua pelo ID correto das suas credenciais AWS
+        AWS_REGION = 'us-east-1' // Defina sua região aqui
     }
 
     stages {
@@ -71,7 +72,7 @@ pipeline {
                     withCredentials([[$class: 'AmazonWebServicesCredentialsBinding', credentialsId: "${AWS_CREDENTIALS}"]]) {
                         echo 'Creating ECS cluster...'
                         sh '''
-                        aws ecs create-cluster --cluster-name demo-flask-cluster
+                        aws ecs create-cluster --cluster-name demo-flask-cluster --region $AWS_REGION
                         '''
                     }
                 }
@@ -86,7 +87,7 @@ pipeline {
                         sh '''
                         aws ecs register-task-definition --family demo-flask-task \
                             --container-definitions name=demo-flask-container,image=$DOCKERHUB_USERNAME/demo-flask-app:latest,essential=true,memory=512,cpu=256 \
-                            --network-mode bridge
+                            --network-mode bridge --region $AWS_REGION
                         '''
                     }
                 }
@@ -100,7 +101,7 @@ pipeline {
                         echo 'Creating ECS service...'
                         sh '''
                         aws ecs create-service --cluster demo-flask-cluster --service-name demo-flask-service \
-                            --task-definition demo-flask-task --desired-count 1
+                            --task-definition demo-flask-task --desired-count 1 --region $AWS_REGION
                         '''
                     }
                 }
