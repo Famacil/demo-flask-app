@@ -87,7 +87,7 @@ pipeline {
                         
                         # Check if ECS Task Execution Role already exists
                         ROLE_NAME="ecsTaskExecutionRole"
-                        if ! aws iam get-role --role-name $ROLE_NAME --region ${AWS_REGION} &> /dev/null; then
+                        if ! aws iam get-role --role-name "$ROLE_NAME" --region ${AWS_REGION} &> /dev/null; then
                             # Create IAM Role for ECS Task Execution
                             cat <<EOF > trust-policy.json
                             {
