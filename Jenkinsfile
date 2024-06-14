@@ -87,7 +87,21 @@ pipeline {
 
                         # Create IAM Role for ECS Task Execution
                         ROLE_NAME="ecsTaskExecutionRole"
-                        aws iam create-role --role-name $ROLE_NAME --assume-role-policy-document file://<(echo '{"Version": "2012-10-17","Statement": [{"Effect": "Allow","Principal": {"Service": "ecs-tasks.amazonaws.com"},"Action": "sts:AssumeRole"}]}') --region ${AWS_REGION}
+                        cat <<EOF > trust-policy.json
+                        {
+                            "Version": "2012-10-17",
+                            "Statement": [
+                                {
+                                    "Effect": "Allow",
+                                    "Principal": {
+                                        "Service": "ecs-tasks.amazonaws.com"
+                                    },
+                                    "Action": "sts:AssumeRole"
+                                }
+                            ]
+                        }
+EOF
+                        aws iam create-role --role-name $ROLE_NAME --assume-role-policy-document file://trust-policy.json --region ${AWS_REGION}
                         aws iam attach-role-policy --role-name $ROLE_NAME --policy-arn arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy --region ${AWS_REGION}
                         EXECUTION_ROLE_ARN=$(aws iam get-role --role-name $ROLE_NAME --query 'Role.Arn' --output text --region ${AWS_REGION})
                         
